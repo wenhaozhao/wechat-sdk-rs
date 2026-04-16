@@ -208,7 +208,7 @@ pub struct ImageItem {
     pub thumb_width: u32,
     pub thumb_size: usize,
     #[serde(rename = "aeskey")]
-    pub aes_key: String,
+    pub aes_key: HexAesKey,
     pub media: CdnMedia,
 }
 
@@ -225,7 +225,7 @@ pub struct VoiceItem {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileItem {
     pub file_name: String,
-    pub len: usize,
+    pub len: String,
     pub md5: String,
     pub media: CdnMedia,
 }
@@ -252,12 +252,7 @@ pub struct RefMessage {
     pub title: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct CdnMedia {
-    pub aes_key: String,
-    pub encrypt_query_param: String,
-    pub full_url: String,
-}
+pub use crate::client::apis::cdn::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(default)]

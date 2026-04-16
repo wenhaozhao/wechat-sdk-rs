@@ -13,6 +13,7 @@ mod send_message;
 
 mod get_config;
 mod send_typing;
+mod cdn;
 
 impl WechatClient {
     fn create_post_request<Body>(
