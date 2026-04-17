@@ -1,18 +1,19 @@
-use super::message::{SessionContext, WechatMessage};
-use crate::client::WechatClient;
+use super::super::SessionContext;
+use super::{WechatClient, message::WechatMessage};
 use anyhow::anyhow;
 use derive_more::with_trait::IntoIterator;
 use derive_more::{Deref, DerefMut};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use std::ops::{Deref, DerefMut};
 use std::time::Duration;
 
 impl WechatClient {
     pub async fn get_updates(&self) -> crate::Result<WechatMessages> {
-        let SessionContext {
-            context_token,
-            get_updates_buf,
-        } = SessionContext::load(&self.config).await?;
+        let get_updates_buf = {
+            let ctx = self.session_context.read().await;
+            ctx.get_updates_buf.clone()
+        };
         let text = self
             .create_post_request(
                 "/ilink/bot/getupdates",
@@ -33,18 +34,28 @@ impl WechatClient {
         match resp {
             GetUpdatesResponse::Ok {
                 msgs,
-                get_updates_buf,
+                get_updates_buf: next_get_updates_buf,
             } => {
-                let _ = SessionContext {
-                    context_token: msgs
-                        .iter()
-                        .map(|it| it.context_token.clone())
-                        .last()
-                        .or(context_token),
+                let mut session_context = self.session_context.write().await;
+                let SessionContext {
+                    user_id,
+                    context_token,
                     get_updates_buf,
+                } = session_context.deref_mut();
+                if let Some(next_user_id) =
+                    msgs.iter().map(|it| it.from_user_id.deref().clone()).last()
+                {
+                    user_id.replace(next_user_id);
                 }
-                .flush(&self.config)
-                .await?;
+                if let Some(next_context_token) =
+                    msgs.iter().map(|it| it.context_token.clone()).last()
+                {
+                    context_token.replace(next_context_token);
+                }
+                if let Some(next_get_updates_buf) = next_get_updates_buf {
+                    get_updates_buf.replace(next_get_updates_buf);
+                }
+                let _ = session_context.flush(&self.config).await;
                 Ok(msgs)
             }
             GetUpdatesResponse::Err { errcode, errmsg } => Err(anyhow!(

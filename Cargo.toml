@@ -30,7 +30,6 @@ aes = { version = "0.9" }
 ecb = { version = "0.2" }
 base64 = "0.22"
 hex = { version = "0.4" }
-image = { version = "0.25", optional = true }
 
 [features]
-default = ["image"]
+default = []

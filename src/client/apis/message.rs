@@ -1,11 +1,9 @@
 use crate::account::WechatUserId;
-use crate::client::WechatConfig;
 use derive_more::{Deref, DerefMut, Display, From, FromStr};
 use serde::{Deserialize, Serialize};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::fmt::Display;
 use std::ops::Deref;
-use std::path::PathBuf;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TypingTicket(String);
@@ -253,40 +251,3 @@ pub struct RefMessage {
 }
 
 pub use crate::client::apis::cdn::*;
-
-#[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(default)]
-pub(super) struct SessionContext {
-    pub context_token: Option<ContextToken>,
-    pub get_updates_buf: Option<String>,
-}
-
-impl SessionContext {
-    async fn path(config: &WechatConfig) -> crate::Result<PathBuf> {
-        let session_ctx_path = config
-            .account_state_path()
-            .await?
-            .join("session_context.json");
-        Ok(session_ctx_path)
-    }
-    pub(super) async fn load(config: &WechatConfig) -> crate::Result<Self> {
-        let path = Self::path(config).await?;
-        let session_ctx = if path.exists() {
-            tokio::fs::read_to_string(&path)
-                .await
-                .ok()
-                .and_then(|json| serde_json::from_str::<SessionContext>(&json).ok())
-                .unwrap_or_default()
-        } else {
-            Default::default()
-        };
-        Ok(session_ctx)
-    }
-
-    pub(super) async fn flush(self, config: &WechatConfig) -> crate::Result<Self> {
-        let path = Self::path(config).await?;
-        let json = serde_json::to_string_pretty(&self)?;
-        tokio::fs::write(path, json).await?;
-        Ok(self)
-    }
-}

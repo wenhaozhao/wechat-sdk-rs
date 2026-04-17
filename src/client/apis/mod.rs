@@ -77,3 +77,5 @@ fn random_wechat_uin() -> String {
     let reduced = (now_nanos % u32::MAX as u128) as u32;
     STANDARD.encode(reduced.to_string().as_bytes())
 }
+
+

@@ -19,7 +19,6 @@ async fn main() -> anyhow::Result<()> {
         let messages = client.get_updates().await?;
         if !messages.is_empty() {
             for WechatMessage {
-                from_user_id: user_id,
                 items,
                 ..
             } in messages.deref()
@@ -30,9 +29,7 @@ async fn main() -> anyhow::Result<()> {
                     } = value
                     {
                         println!("recv: {}", text);
-                        let _ = client
-                            .send_message(user_id, format!("I repeat: {}", text), None)
-                            .await?;
+                        let _ = client.send_message(format!("I repeat: {}", text)).await?;
                     }
                 }
             }

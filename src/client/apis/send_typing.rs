@@ -1,6 +1,4 @@
-use crate::client::WechatClient;
-use crate::client::apis::message::TypingTicket;
-use crate::client::message::ToUserId;
+use super::{WechatClient, message::TypingTicket};
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -8,45 +6,27 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::time::Duration;
 
 impl WechatClient {
-    pub async fn send_typing<TU>(
-        &self,
-        to_user_id: TU,
-        typing_ticket: &TypingTicket,
-    ) -> crate::Result<()>
-    where
-        TU: Into<ToUserId>,
-    {
-        self.send_typing_actual(to_user_id, typing_ticket, SendTypingStatus::Typing)
+    pub async fn send_typing(&self, typing_ticket: &TypingTicket) -> crate::Result<()> {
+        self.send_typing_actual(typing_ticket, SendTypingStatus::Typing)
             .await
     }
 
-    pub async fn send_typing_cannel<TU>(
-        &self,
-        to_user_id: TU,
-        typing_ticket: &TypingTicket,
-    ) -> crate::Result<()>
-    where
-        TU: Into<ToUserId>,
-    {
-        self.send_typing_actual(to_user_id, typing_ticket, SendTypingStatus::Cancel)
+    pub async fn send_typing_cannel(&self, typing_ticket: &TypingTicket) -> crate::Result<()> {
+        self.send_typing_actual(typing_ticket, SendTypingStatus::Cancel)
             .await
     }
 
-    async fn send_typing_actual<TU>(
+    async fn send_typing_actual(
         &self,
-        to_user_id: TU,
         typing_ticket: &TypingTicket,
         send_typing_status: SendTypingStatus,
-    ) -> crate::Result<()>
-    where
-        TU: Into<ToUserId>,
-    {
-        let to_user_id = to_user_id.into();
+    ) -> crate::Result<()> {
+        let (user_id, _) = self.session_context_unwrap().await?;
         let text = self
             .create_post_request(
                 "/ilink/bot/sendtyping",
                 &json!({
-                    "ilink_user_id": &to_user_id,
+                    "ilink_user_id": &user_id,
                     "typing_ticket": typing_ticket,
                     "status": send_typing_status,
                 }),
